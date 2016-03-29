@@ -1,0 +1,51 @@
+Reflections on ZombieDice design by Daniel McVicker.
+
+I started my implementation by writing a version that could run locally.
+This freed me up to focus on the GAE/API specific issues without having
+to also create the game logic simultaneously.
+ 
+As a result, I added a number of different properties to the Game model, 
+including 'statuses', 'next_turn' and 'final_player'. Statuses was added to 
+track the ongoing score of the game. Since there was an existing 'Scores'
+class in the sample code, I called it statuses rather than scores. Originally
+I had tried to implement this as a structuredProperty but I found it too
+difficult to work with. next_turn exists to tell you which turn to use next.
+final_player is to match the game logic that requires all players have a turn
+to match the first player who exceeds 12 brains. 
+
+I created a turn model wholesale. A specific turn has an unknown number of 
+rolls in it. The player has to have a number of different types of information
+in order to make good decisions on whether to roll or pass the dice, so I
+included all the information that the player would need to know in order to 
+make a decision. 
+
+The Score model stayed essentially intact. Looking back, I would have renamed
+this model to 'wins' so that I could name 'status' something more descriptive.
+
+I struggled with a number of parts of this project. Perhaps the most obvious
+to the reviewer would be the game logic: perhaps too much of it is in the 
+models rather than in the api. I found the sample game implementations to
+be written very differently than the conference app code--use of class
+methods, etc. Originally I wrote the dice as a property of the turn. 
+This resulted in dice being stored as pickleProperties, so I had 
+pickleProperties stored inside pickleProperties and trying to unpack that 
+didn't work. Figuring out how to support any number of players was also 
+challenging, and required me to better understand lists. 
+
+I still don't feel like this project utilizes GAE completely. While writing
+a local version of the application was very helpful in terms of helping me
+understand how to model the game, it also limited my vision in terms of
+choices that I made. For instance, I believe I use a dict to store the 
+statuses. While this made sense locally as it made it very easy and fast 
+to query a given player to get their score, I think it makes less sense on 
+GAE, and I'm not sure I ever used the real functionality of the dict in the 
+final project.
+
+There are perhaps other places where I could have used structuredProperties
+rather than storing a pickleProperty of a list, and so on. So while I think
+the project is workable, it also could be improved in a number of ways. 
+
+A final mention needs to be the GAE documentation: it feels limited, or 
+perhaps I just don't know enough about Python yet. I felt very unprepared
+for this project after completing the classwork. I still don't know if 
+I implemented everything correctly. 

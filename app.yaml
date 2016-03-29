@@ -1,0 +1,29 @@
+application: zombie-dice
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: yes
+
+handlers:
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
+
+# This handler routes requests for the API to the endpoints code  
+- url: /_ah/spi/.*
+  script: api.APPLICATION
+  secure: always
+
+- url: /tasks/send_move_email
+  script: main.app
+
+- url: /crons/send_reminder
+  script: main.app
+  
+libraries:
+- name: webapp2
+  version: "2.5.2"
+
+# You must include the Endpoints library if you wish to serve an API.
+- name: endpoints
+  version: latest
