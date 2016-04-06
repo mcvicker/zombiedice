@@ -10,7 +10,7 @@ from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
 
-from models import User, UserForms, GameForm, GameForms, NewGameForm
+from models import User, UserForm, UserForms, GameForm, GameForms, NewGameForm
 from models import Game, Turn, TurnForm, TakeTurnForm, TurnForms, StringMessage
 
 from utils import get_by_urlsafe
@@ -18,15 +18,16 @@ from utils import get_by_urlsafe
 __author__ = "danielmcvicker@gmail.com (Daniel McVicker)"
 
 NEW_GAME_REQUEST = endpoints.ResourceContainer(NewGameForm)
-USER_REQUEST = endpoints.ResourceContainer(user_name=messages.StringField(1),
-                                           email=messages.StringField(2))
+USER_REQUEST = endpoints.ResourceContainer(
+    user_name=messages.StringField(1),
+    email=messages.StringField(2))
 GET_GAME_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1),)
 TAKE_TURN_REQUEST = endpoints.ResourceContainer(
     TakeTurnForm,
     urlsafe_turn_key=messages.StringField(1))
 USER_GAMES_REQUEST = endpoints.ResourceContainer(
-    urlsafe_user_key=messages.StringField(1),)
+    user_name=messages.StringField(1),)
 CANCEL_GAME_REQUEST = endpoints.ResourceContainer(
     urlsafe_game_key=messages.StringField(1),)
 GAME_HISTORY_REQUEST = endpoints.ResourceContainer(
@@ -37,10 +38,13 @@ GAME_HISTORY_REQUEST = endpoints.ResourceContainer(
 class ZombieDiceApi(remote.Service):
     """Game API for the Zombie Dice game"""
 
-    @endpoints.method(message_types.VoidMessage, UserForms,
-                      path="users", http_method='GET', name="get_users")
+    @endpoints.method(request_message=message_types.VoidMessage, 
+                      response_message=UserForms,
+                      path='users', 
+                      http_method='GET', 
+                      name='get_users')
     def get_users(self, request):
-        """This returns all users"""
+        """Return all Users, including ones who haven't played any Games"""
         users = User.query().fetch()
         return UserForms(items=[user.to_form() for user in users])
 
@@ -101,7 +105,7 @@ class ZombieDiceApi(remote.Service):
         if game:
             return game.to_form()
         else:
-            raise endpointsNotFoundException('Game not found!')
+            raise endpoints.NotFoundException('Game not found!')
 
     @endpoints.method(request_message=TAKE_TURN_REQUEST,
                       response_message=TurnForm,
@@ -125,22 +129,25 @@ class ZombieDiceApi(remote.Service):
 
     @endpoints.method(request_message=USER_GAMES_REQUEST,
                       response_message=GameForms,
-                      path='user/games/{urlsafe_user_key}',
+                      path='user/games/{user_name}',
                       name='get_user_games',
                       http_method='GET')
     def get_user_games(self, request):
         """Return all Games the user has played or is playing. """
-        player = get_by_urlsafe(request.urlsafe_user_key, User)
-        games = Game.query(Game.players == player.key)
+        user = User.query(User.name == request.user_name).get()
+        if not user:
+            raise endpoints.NotFoundException(
+                'That username does not exist!')
+        games = Game.query(Game.players == user.key)
         return GameForms(items=[game.to_form() for game in games])
-
+        
     @endpoints.method(request_message=CANCEL_GAME_REQUEST,
                       response_message=StringMessage,
                       path='game/{urlsafe_game_key}',
                       name='cancel_game',
                       http_method='DELETE')
     def cancel_game(self, request):
-        """Delete a game in progress. Games that are over cannot be deleted."""
+        """Delete a Game in progress. Games that are over cannot be deleted."""
         game = get_by_urlsafe(request.urlsafe_game_key, Game)
         if game and not game.game_over:
             # first delete all child turns
