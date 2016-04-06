@@ -31,7 +31,7 @@ class SendReminderEmail(webapp2.RequestHandler):
         """Send a reminder email to each User with an email who has
         games in progress. Email body includes a count of active games and
         their urlsafe keys
-        Called every hour using a cron job"""
+        Called every twelve hours using a cron job"""
         users = User.query(User.email is not None)
 
         for user in users:
